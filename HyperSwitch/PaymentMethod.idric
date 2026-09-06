@@ -1,0 +1,42 @@
+module HyperSwitch.PaymentMethod
+
+%default total
+
+-- Port of crates/common_enums/src/enums.rs::PaymentMethod.
+public export
+choice payment_method one_of
+  card
+  card_redirect
+  pay_later
+  wallet
+  bank_redirect
+  bank_transfer
+  crypto
+  bank_debit
+  reward
+  real_time_payment
+  upi
+  voucher
+  gift_card
+  open_banking
+  mobile_payment
+  network_token
+
+public export
+is_gift_card : payment_method → Bool
+is_gift_card gift_card = True
+is_gift_card _ = False
+
+public export
+supports_installments : payment_method → Bool
+supports_installments card = True
+supports_installments _ = False
+
+public export
+should_persist_locker_id_for_saved_payment_method : payment_method → Bool → Bool
+should_persist_locker_id_for_saved_payment_method card _ = True
+should_persist_locker_id_for_saved_payment_method bank_debit _ = True
+should_persist_locker_id_for_saved_payment_method bank_redirect _ = True
+should_persist_locker_id_for_saved_payment_method wallet should_check_for_customer_pm =
+  not should_check_for_customer_pm
+should_persist_locker_id_for_saved_payment_method _ _ = False
