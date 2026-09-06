@@ -1,0 +1,200 @@
+module HyperSwitch.Connector
+
+%default total
+
+-- Port of crates/common_enums/src/connector_enums.rs::Connector.
+public export
+choice connector one_of
+  absa_sanlam
+  authipay
+  adyenplatform
+  dummy_billing_connector
+  dummy_connector1
+  dummy_connector2
+  dummy_connector3
+  dummy_connector4
+  dummy_connector5
+  dummy_connector6
+  dummy_connector7
+  aci
+  adyen
+  affirm
+  airwallex
+  amazonpay
+  archipel
+  authorizedotnet
+  bambora
+  bamboraapac
+  bankofamerica
+  barclaycard
+  billwerk
+  bitpay
+  bluesnap
+  blackhawknetwork
+  calida
+  boku
+  braintree
+  breadpay
+  cardinal
+  cashtocode
+  celero
+  chargebee
+  checkbook
+  checkout
+  citigate
+  coinbase
+  coingate
+  custombilling
+  cryptopay
+  ctp_mastercard
+  ctp_visa
+  cybersource
+  cybersourcedecisionmanager
+  datatrans
+  deutschebank
+  digitalvirgo
+  dlocal
+  dwolla
+  ebanx
+  envoy
+  elavon
+  facilitapay
+  finix
+  fiserv
+  fiservemea
+  fiservcommercehub
+  fiuu
+  flexiti
+  forte
+  getnet
+  gigadat
+  givepayments
+  globalpay
+  globepay
+  gocardless
+  gotyme_sanlam
+  gpayments
+  hipay
+  helcim
+  hyperpg
+  hyperswitch_vault
+  interpayments
+  inespay
+  iatapay
+  ilixium
+  imerchantsolutions
+  itaubank
+  jpmorgan
+  juspay
+  juspaythreedsserver
+  klarna
+  loonio
+  mifinity
+  mollie
+  moneris
+  multisafepay
+  netcetera
+  nexinets
+  nexixpay
+  nmi
+  nomupay
+  noon
+  nordea
+  novalnet
+  nuvei
+  opennode
+  paybox
+  payload
+  payme
+  payone
+  paypal
+  paysafe
+  paystack
+  paytm
+  payconex
+  payu
+  peachpayments
+  payjustnow
+  payjustnowinstore
+  phonepe
+  placetopay
+  powertranz
+  prophetpay
+  rapyd
+  razorpay
+  recurly
+  redsys
+  revolv3
+  santander
+  shift4
+  silverflow
+  square
+  stax
+  stripe
+  stripebilling
+  taxjar
+  threedsecureio
+  tesouro
+  tokenex
+  tokenio
+  trustly
+  truelayer
+  trustpay
+  trustpayments
+  tsys
+  tsys_transit
+  vgs
+  volt
+  wellsfargo
+  wise
+  worldline
+  worldpay
+  worldpayraft
+  worldpayvantiv
+  worldpayxml
+  worldpaymodular
+  signifyd
+  plaid
+  riskified
+  xendit
+  zen
+  zift
+  zsl
+
+public export
+supports_file_storage_module : connector → Bool
+supports_file_storage_module stripe = True
+supports_file_storage_module checkout = True
+supports_file_storage_module worldpayvantiv = True
+supports_file_storage_module _ = False
+
+public export
+requires_defend_dispute : connector → Bool
+requires_defend_dispute adyen = True
+requires_defend_dispute checkout = True
+requires_defend_dispute _ = False
+
+public export
+is_separate_authentication_supported : connector → Bool
+is_separate_authentication_supported stripe = True
+is_separate_authentication_supported checkout = True
+is_separate_authentication_supported zift = True
+is_separate_authentication_supported nmi = True
+is_separate_authentication_supported braintree = True
+is_separate_authentication_supported cybersource = True
+is_separate_authentication_supported archipel = True
+is_separate_authentication_supported nuvei = True
+is_separate_authentication_supported adyen = True
+is_separate_authentication_supported _ = False
+
+public export
+is_overcapture_supported_by_connector : connector → Bool
+is_overcapture_supported_by_connector stripe = True
+is_overcapture_supported_by_connector adyen = True
+is_overcapture_supported_by_connector _ = False
+
+public export
+should_acknowledge_webhook_for_resource_not_found_errors : connector → Bool
+should_acknowledge_webhook_for_resource_not_found_errors adyenplatform = True
+should_acknowledge_webhook_for_resource_not_found_errors adyen = True
+should_acknowledge_webhook_for_resource_not_found_errors _ = False
