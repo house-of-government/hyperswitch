@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Source-rule audit and mutation tests
         run: make -f idric.mk check-source
-      - name: Build the current Idric compiler
+      - name: Build and install the current Idric compiler
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential curl
@@ -32,11 +32,11 @@ jobs:
           git -C "$RUNNER_TEMP/Idric" rev-parse HEAD > _/build/type-contract/compiler-head.txt
           cd "$RUNNER_TEMP/Idric"
           ./_/edric bootstrap
+          make -C _ install
       - name: Compile, run, and reject illegal constructions
         run: |
-          export PATH="$RUNNER_TEMP/Idric/_/.tools/bin:$PATH"
-          export IDRIS2_PATH="$RUNNER_TEMP/Idric/_/libs/prelude/build/ttc:$RUNNER_TEMP/Idric/_/libs/base/build/ttc:$RUNNER_TEMP/Idric/_/libs/linear/build/ttc:$RUNNER_TEMP/Idric/_/libs/network/build/ttc:$RUNNER_TEMP/Idric/_/libs/contrib/build/ttc:$RUNNER_TEMP/Idric/_/libs/test/build/ttc:"
-          make -f idric.mk test IDRIC="$RUNNER_TEMP/Idric/_/build/exec/idris2"
+          export PATH="$RUNNER_TEMP/Idric/_/.tools/bin:$HOME/.idris2/bin:$PATH"
+          make -f idric.mk test IDRIC="$HOME/.idris2/bin/idris2"
       - name: Keep the exact compiler and acceptance receipt
         if: always()
         uses: actions/upload-artifact@v4
