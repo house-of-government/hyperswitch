@@ -1,5 +1,7 @@
 module HyperSwitch.PaymentMethod
 
+import HyperSwitch.Attempt
+
 %default total
 
 -- Port of crates/common_enums/src/enums.rs::PaymentMethod.
@@ -40,3 +42,53 @@ should_persist_locker_id_for_saved_payment_method bank_redirect _ = True
 should_persist_locker_id_for_saved_payment_method wallet should_check_for_customer_pm =
   not should_check_for_customer_pm
 should_persist_locker_id_for_saved_payment_method _ _ = False
+
+-- Port of PaymentMethodStatus and From<AttemptStatus>.
+public export
+choice payment_method_status one_of
+  payment_method_active
+  payment_method_inactive
+  payment_method_processing
+  payment_method_awaiting_data
+  payment_method_new
+  payment_method_redacted
+
+public export
+payment_method_status_from_attempt : attempt_status → payment_method_status
+payment_method_status_from_attempt failure = payment_method_inactive
+payment_method_status_from_attempt voided = payment_method_inactive
+payment_method_status_from_attempt voided_post_charge = payment_method_inactive
+payment_method_status_from_attempt started = payment_method_inactive
+payment_method_status_from_attempt pending = payment_method_inactive
+payment_method_status_from_attempt unresolved = payment_method_inactive
+payment_method_status_from_attempt cod_initiated = payment_method_inactive
+payment_method_status_from_attempt authorizing = payment_method_inactive
+payment_method_status_from_attempt void_initiated = payment_method_inactive
+payment_method_status_from_attempt authorization_failed = payment_method_inactive
+payment_method_status_from_attempt router_declined = payment_method_inactive
+payment_method_status_from_attempt authentication_successful = payment_method_inactive
+payment_method_status_from_attempt payment_method_awaited = payment_method_inactive
+payment_method_status_from_attempt authentication_failed = payment_method_inactive
+payment_method_status_from_attempt authentication_pending = payment_method_inactive
+payment_method_status_from_attempt capture_initiated = payment_method_inactive
+payment_method_status_from_attempt capture_failed = payment_method_inactive
+payment_method_status_from_attempt void_failed = payment_method_inactive
+payment_method_status_from_attempt auto_refunded = payment_method_inactive
+payment_method_status_from_attempt partial_charged = payment_method_inactive
+payment_method_status_from_attempt partial_charged_and_chargeable = payment_method_inactive
+payment_method_status_from_attempt partially_authorized = payment_method_inactive
+payment_method_status_from_attempt confirmation_awaited = payment_method_inactive
+payment_method_status_from_attempt device_data_collection_pending = payment_method_inactive
+payment_method_status_from_attempt integrity_failure = payment_method_inactive
+payment_method_status_from_attempt expired = payment_method_inactive
+payment_method_status_from_attempt capture_review = payment_method_inactive
+payment_method_status_from_attempt charged = payment_method_active
+payment_method_status_from_attempt authorized = payment_method_active
+
+public export
+can_transition_payment_method_status : payment_method_status → payment_method_status → Bool
+can_transition_payment_method_status payment_method_inactive payment_method_active = True
+can_transition_payment_method_status payment_method_inactive payment_method_new = True
+can_transition_payment_method_status payment_method_new payment_method_active = True
+can_transition_payment_method_status payment_method_new payment_method_inactive = True
+can_transition_payment_method_status _ _ = False
