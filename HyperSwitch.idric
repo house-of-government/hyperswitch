@@ -1,3 +1,4 @@
 module HyperSwitch
 
 import public HyperSwitch.Attempt
+import public HyperSwitch.Connector
