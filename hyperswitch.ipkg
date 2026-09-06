@@ -3,4 +3,4 @@ package hyperswitch_idric
 version = 0.1.0
 sourcedir = "."
 
-modules = HyperSwitch, HyperSwitch.Attempt
+modules = HyperSwitch, HyperSwitch.Attempt, HyperSwitch.Connector
