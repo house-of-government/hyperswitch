@@ -1,17 +1,18 @@
 IDRIC ?= idris2
+PYTHON ?= python3
 
-.PHONY: all test clean
+.PHONY: all test check-source clean
 
 all:
 	$(IDRIC) --build hyperswitch.ipkg
 
-test: all
-	$(IDRIC) tests/AttemptStatusTests.idric -o hyperswitch-attempt-tests
-	./build/exec/hyperswitch-attempt-tests
-	$(IDRIC) tests/PaymentMethodTests.idric -o hyperswitch-payment-method-tests
-	./build/exec/hyperswitch-payment-method-tests
-	$(IDRIC) tests/ConnectorTests.idric -o hyperswitch-connector-tests
-	./build/exec/hyperswitch-connector-tests
+check-source:
+	$(PYTHON) _/tests/test_source_audit.py
+	$(PYTHON) _/tests/check_types.py --source-only
+
+test:
+	$(PYTHON) _/tests/test_source_audit.py
+	$(PYTHON) _/tests/check_types.py --compiler "$(IDRIC)"
 
 clean:
-	rm -rf build
+	rm -rf build _/build

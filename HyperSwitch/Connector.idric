@@ -4,7 +4,9 @@ import public HyperSwitch.PaymentMethod
 
 %default total
 
--- Port of crates/common_enums/src/connector_enums.rs::Connector.
+-- Connector identities are not configured merchant accounts or credentials.
+-- Dummy identities remain representable for compatibility; this is not a
+-- production-registration policy.
 public export
 choice connector one_of
   absa_sanlam
@@ -163,69 +165,187 @@ choice connector one_of
   zift
   zsl
 
+-- Each constructor certifies one of the existing Rust rules. There is no
+-- constructor taking an unchecked Bool. Method indices are checking-only.
+-- Absence of access-token support does NOT mean payments are unsupported:
+-- a connector may use a different authentication mechanism.
+public export
+data access_token_support : (connector, payment_method) → Type where
+  Airwallex_token : {0 method : payment_method} → access_token_support (airwallex, method)
+  Deutschebank_token : {0 method : payment_method} → access_token_support (deutschebank, method)
+  Globalpay_token : {0 method : payment_method} → access_token_support (globalpay, method)
+  Jpmorgan_token : {0 method : payment_method} → access_token_support (jpmorgan, method)
+  Moneris_token : {0 method : payment_method} → access_token_support (moneris, method)
+  Nordea_token : {0 method : payment_method} → access_token_support (nordea, method)
+  Paypal_token : {0 method : payment_method} → access_token_support (paypal, method)
+  Payu_token : {0 method : payment_method} → access_token_support (payu, method)
+  Tesouro_token : {0 method : payment_method} → access_token_support (tesouro, method)
+  Iatapay_token : {0 method : payment_method} → access_token_support (iatapay, method)
+  Volt_token : {0 method : payment_method} → access_token_support (volt, method)
+  Itaubank_token : {0 method : payment_method} → access_token_support (itaubank, method)
+  Facilitapay_token : {0 method : payment_method} → access_token_support (facilitapay, method)
+  Dwolla_token : {0 method : payment_method} → access_token_support (dwolla, method)
+  Santander_token : {0 method : payment_method} → access_token_support (santander, method)
+  Truelayer_token : {0 method : payment_method} → access_token_support (truelayer, method)
+  Fiservcommercehub_token : {0 method : payment_method} → access_token_support (fiservcommercehub, method)
+  Trustpay_redirect_token : access_token_support (trustpay, bank_redirect)
+  Trustpay_transfer_token : access_token_support (trustpay, bank_transfer)
+
+public export
+access_token_support_for : (selection : (connector, payment_method)) → Maybe (access_token_support selection)
+access_token_support_for (airwallex, _) = Just Airwallex_token
+access_token_support_for (deutschebank, _) = Just Deutschebank_token
+access_token_support_for (globalpay, _) = Just Globalpay_token
+access_token_support_for (jpmorgan, _) = Just Jpmorgan_token
+access_token_support_for (moneris, _) = Just Moneris_token
+access_token_support_for (nordea, _) = Just Nordea_token
+access_token_support_for (paypal, _) = Just Paypal_token
+access_token_support_for (payu, _) = Just Payu_token
+access_token_support_for (tesouro, _) = Just Tesouro_token
+access_token_support_for (iatapay, _) = Just Iatapay_token
+access_token_support_for (volt, _) = Just Volt_token
+access_token_support_for (itaubank, _) = Just Itaubank_token
+access_token_support_for (facilitapay, _) = Just Facilitapay_token
+access_token_support_for (dwolla, _) = Just Dwolla_token
+access_token_support_for (santander, _) = Just Santander_token
+access_token_support_for (truelayer, _) = Just Truelayer_token
+access_token_support_for (fiservcommercehub, _) = Just Fiservcommercehub_token
+access_token_support_for (trustpay, bank_redirect) = Just Trustpay_redirect_token
+access_token_support_for (trustpay, bank_transfer) = Just Trustpay_transfer_token
+access_token_support_for _ = Nothing
+
+public export
+data order_creation_requirement : connector → Type where
+  Razorpay_order_creation_requirement : order_creation_requirement razorpay
+  Airwallex_order_creation_requirement : order_creation_requirement airwallex
+
+public export
+order_creation_requirement_for : (provider : connector) → Maybe (order_creation_requirement provider)
+order_creation_requirement_for razorpay = Just Razorpay_order_creation_requirement
+order_creation_requirement_for airwallex = Just Airwallex_order_creation_requirement
+order_creation_requirement_for _ = Nothing
+
+public export
+data file_storage_support : connector → Type where
+  Stripe_file_storage_support : file_storage_support stripe
+  Checkout_file_storage_support : file_storage_support checkout
+  Worldpayvantiv_file_storage_support : file_storage_support worldpayvantiv
+
+public export
+file_storage_support_for : (provider : connector) → Maybe (file_storage_support provider)
+file_storage_support_for stripe = Just Stripe_file_storage_support
+file_storage_support_for checkout = Just Checkout_file_storage_support
+file_storage_support_for worldpayvantiv = Just Worldpayvantiv_file_storage_support
+file_storage_support_for _ = Nothing
+
+public export
+data dispute_defence_requirement : connector → Type where
+  Adyen_dispute_defence_requirement : dispute_defence_requirement adyen
+  Checkout_dispute_defence_requirement : dispute_defence_requirement checkout
+
+public export
+dispute_defence_requirement_for : (provider : connector) → Maybe (dispute_defence_requirement provider)
+dispute_defence_requirement_for adyen = Just Adyen_dispute_defence_requirement
+dispute_defence_requirement_for checkout = Just Checkout_dispute_defence_requirement
+dispute_defence_requirement_for _ = Nothing
+
+public export
+data separate_authentication_support : connector → Type where
+  Stripe_separate_authentication_support : separate_authentication_support stripe
+  Checkout_separate_authentication_support : separate_authentication_support checkout
+  Zift_separate_authentication_support : separate_authentication_support zift
+  Nmi_separate_authentication_support : separate_authentication_support nmi
+  Braintree_separate_authentication_support : separate_authentication_support braintree
+  Cybersource_separate_authentication_support : separate_authentication_support cybersource
+  Archipel_separate_authentication_support : separate_authentication_support archipel
+  Nuvei_separate_authentication_support : separate_authentication_support nuvei
+  Adyen_separate_authentication_support : separate_authentication_support adyen
+
+public export
+separate_authentication_support_for : (provider : connector) → Maybe (separate_authentication_support provider)
+separate_authentication_support_for stripe = Just Stripe_separate_authentication_support
+separate_authentication_support_for checkout = Just Checkout_separate_authentication_support
+separate_authentication_support_for zift = Just Zift_separate_authentication_support
+separate_authentication_support_for nmi = Just Nmi_separate_authentication_support
+separate_authentication_support_for braintree = Just Braintree_separate_authentication_support
+separate_authentication_support_for cybersource = Just Cybersource_separate_authentication_support
+separate_authentication_support_for archipel = Just Archipel_separate_authentication_support
+separate_authentication_support_for nuvei = Just Nuvei_separate_authentication_support
+separate_authentication_support_for adyen = Just Adyen_separate_authentication_support
+separate_authentication_support_for _ = Nothing
+
+public export
+data overcapture_support : connector → Type where
+  Stripe_overcapture_support : overcapture_support stripe
+  Adyen_overcapture_support : overcapture_support adyen
+
+public export
+overcapture_support_for : (provider : connector) → Maybe (overcapture_support provider)
+overcapture_support_for stripe = Just Stripe_overcapture_support
+overcapture_support_for adyen = Just Adyen_overcapture_support
+overcapture_support_for _ = Nothing
+
+public export
+data missing_webhook_acknowledgement : connector → Type where
+  Adyenplatform_missing_webhook_acknowledgement : missing_webhook_acknowledgement adyenplatform
+  Adyen_missing_webhook_acknowledgement : missing_webhook_acknowledgement adyen
+
+public export
+missing_webhook_acknowledgement_for : (provider : connector) → Maybe (missing_webhook_acknowledgement provider)
+missing_webhook_acknowledgement_for adyenplatform = Just Adyenplatform_missing_webhook_acknowledgement
+missing_webhook_acknowledgement_for adyen = Just Adyen_missing_webhook_acknowledgement
+missing_webhook_acknowledgement_for _ = Nothing
+
+-- A structural plan, not a token, credential, payment permission or HTTP call.
+-- A caller cannot attach another connector's/method's certificate to this plan.
+public export
+data AccessTokenPlan : (connector, payment_method) → Type where
+  MkAccessTokenPlan : (selection : (connector, payment_method)) →
+                      (0 capability : access_token_support selection) →
+                      AccessTokenPlan selection
+
+public export
+access_token_selection : AccessTokenPlan selection → (connector, payment_method)
+access_token_selection (MkAccessTokenPlan selection _) = selection
+
+public export
+plan_access_token : (selection : (connector, payment_method)) → Maybe (AccessTokenPlan selection)
+plan_access_token selection =
+  case access_token_support_for selection of
+    Nothing ⇒ Nothing
+    Just capability ⇒ Just (MkAccessTokenPlan selection capability)
+
+-- Compatibility/display projections. Operational callers use the indexed
+-- values above. These Bool APIs do not introduce a second rule table.
+capability_present : Maybe any_type → Bool
+capability_present Nothing = False
+capability_present (Just _) = True
+
 public export
 supports_access_token : connector → payment_method → Bool
-supports_access_token airwallex _ = True
-supports_access_token deutschebank _ = True
-supports_access_token globalpay _ = True
-supports_access_token jpmorgan _ = True
-supports_access_token moneris _ = True
-supports_access_token nordea _ = True
-supports_access_token paypal _ = True
-supports_access_token payu _ = True
-supports_access_token trustpay bank_redirect = True
-supports_access_token trustpay bank_transfer = True
-supports_access_token tesouro _ = True
-supports_access_token iatapay _ = True
-supports_access_token volt _ = True
-supports_access_token itaubank _ = True
-supports_access_token facilitapay _ = True
-supports_access_token dwolla _ = True
-supports_access_token santander _ = True
-supports_access_token truelayer _ = True
-supports_access_token fiservcommercehub _ = True
-supports_access_token _ _ = False
+supports_access_token provider method = capability_present (access_token_support_for (provider, method))
 
 public export
 requires_order_creation_before_payment : connector → payment_method → Bool
-requires_order_creation_before_payment razorpay _ = True
-requires_order_creation_before_payment airwallex _ = True
-requires_order_creation_before_payment _ _ = False
+requires_order_creation_before_payment provider _ = capability_present (order_creation_requirement_for provider)
 
 public export
 supports_file_storage_module : connector → Bool
-supports_file_storage_module stripe = True
-supports_file_storage_module checkout = True
-supports_file_storage_module worldpayvantiv = True
-supports_file_storage_module _ = False
+supports_file_storage_module provider = capability_present (file_storage_support_for provider)
 
 public export
 requires_defend_dispute : connector → Bool
-requires_defend_dispute adyen = True
-requires_defend_dispute checkout = True
-requires_defend_dispute _ = False
+requires_defend_dispute provider = capability_present (dispute_defence_requirement_for provider)
 
 public export
 is_separate_authentication_supported : connector → Bool
-is_separate_authentication_supported stripe = True
-is_separate_authentication_supported checkout = True
-is_separate_authentication_supported zift = True
-is_separate_authentication_supported nmi = True
-is_separate_authentication_supported braintree = True
-is_separate_authentication_supported cybersource = True
-is_separate_authentication_supported archipel = True
-is_separate_authentication_supported nuvei = True
-is_separate_authentication_supported adyen = True
-is_separate_authentication_supported _ = False
+is_separate_authentication_supported provider = capability_present (separate_authentication_support_for provider)
 
 public export
 is_overcapture_supported_by_connector : connector → Bool
-is_overcapture_supported_by_connector stripe = True
-is_overcapture_supported_by_connector adyen = True
-is_overcapture_supported_by_connector _ = False
+is_overcapture_supported_by_connector provider = capability_present (overcapture_support_for provider)
 
 public export
 should_acknowledge_webhook_for_resource_not_found_errors : connector → Bool
-should_acknowledge_webhook_for_resource_not_found_errors adyenplatform = True
-should_acknowledge_webhook_for_resource_not_found_errors adyen = True
-should_acknowledge_webhook_for_resource_not_found_errors _ = False
+should_acknowledge_webhook_for_resource_not_found_errors provider = capability_present (missing_webhook_acknowledgement_for provider)
+

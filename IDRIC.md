@@ -1,69 +1,130 @@
 # HyperSwitch → Idriç
 
-This branch starts a behavior-preserving Idriç rewrite without deleting the Rust implementation yet. The Rust tree remains the executable reference while pure domain behavior is moved across with acceptance checks.
+The Rust implementation is unchanged. The Idriç branch is a domain-library
+conversion, not a replacement payment service. It remains draft until the
+current Idriç compiler has built and run its acceptance suite.
 
-## Converted seams
+## Current domain coverage
 
-### Attempt status
+`HyperSwitch.idric` is the public entrypoint. `HyperSwitch/Attempt.idric`
+retains all 29 attempt statuses and the five existing classification queries.
+`HyperSwitch/PaymentMethod.idric` retains all 16 payment-method identities,
+all six payment-method statuses, and the complete attempt-to-method-status
+mapping. `HyperSwitch/Connector.idric` retains all 155 connector identities,
+including the existing dummy identities; enumeration is not production
+registration or merchant-account configuration.
 
-`HyperSwitch/Attempt.idric` ports `AttemptStatus` from `crates/common_enums/src/enums.rs`.
+## Constraints, not just labels
 
-It includes the complete 29-state domain and the existing pure predicates:
+Seven indexed families now represent the existing connector rules:
 
-- `is_terminal_status`
-- `is_payment_terminal_failure`
-- `is_success`
-- `is_authorization_success`
-- `should_update_payment_method`
+| Family | Indices |
+| --- | --- |
+| `access_token_support` | connector and payment method |
+| `order_creation_requirement` | connector |
+| `file_storage_support` | connector |
+| `dispute_defence_requirement` | connector |
+| `separate_authentication_support` | connector |
+| `overcapture_support` | connector |
+| `missing_webhook_acknowledgement` | connector |
 
-`tests/AttemptStatusTests.idric` checks the complete true/false truth tables.
+Their 39 constructors cover exactly the positive cases in the previous port.
+There is no constructor accepting an arbitrary Boolean. For example,
+`Trustpay_transfer_token` has type
+`access_token_support (trustpay, bank_transfer)`, not the corresponding type
+for `card` or `stripe`.
 
-### Payment methods
+`access_token_support_for` handles a runtime selection and returns either
+`Nothing` or a certificate indexed by that exact selection. `plan_access_token`
+returns `Maybe (AccessTokenPlan selection)`: it cannot silently substitute a
+different selection. The plan constructor requires its certificate with
+quantity `0`, so that argument is checking-only rather than a stored flag.
 
-`HyperSwitch/PaymentMethod.idric` ports the 16-case `PaymentMethod` domain and its currently converted pure behavior:
+The old `supports_*`/`requires_*` Boolean entrypoints remain compatibility and
+display projections of the certificate lookups. They no longer maintain
+separate rule tables. Ordinary classification questions, such as whether an
+attempt succeeded, are still allowed to return `Bool`.
 
-- gift-card classification
-- installment support
-- locker-ID persistence rules
-- the six-state `PaymentMethodStatus` domain
-- the complete `AttemptStatus → PaymentMethodStatus` mapping
-- allowed payment-method-status transitions
+## State changes
 
-`tests/PaymentMethodTests.idric` checks these rules, including every attempt status in the status conversion.
+`payment_method_transition (before, after)` has just four constructors:
 
-### Connectors
+- inactive → active
+- inactive → new
+- new → active
+- new → inactive
 
-`HyperSwitch/Connector.idric` ports the connector domain and the first routing/capability predicates from `crates/common_enums/src/connector_enums.rs`:
+These preserve the existing Rust rule, including its refusal of self-transitions.
+`PaymentMethodChange edge` requires a certificate for exactly `edge`, with
+checking-only quantity `0`. Its runtime planner returns
+`Maybe (PaymentMethodChange edge)`, not an unchecked pair or a Boolean approval.
+The old `can_transition_payment_method_status` query derives from this lookup.
 
-- access-token support by connector and payment method
-- pre-payment order-creation requirement
-- file-storage support
-- dispute-defense requirement
-- separate-authentication support
-- overcapture support
-- acknowledgement of resource-not-found webhook errors
+A `PaymentMethodChange` is a validated change description. It does not mutate a
+stored payment method. A future storage operation must also bind the method ID
+and observed version and enforce the transition atomically; types alone do not
+prevent concurrent updates or stale database observations.
 
-`tests/ConnectorTests.idric` checks the positive connector sets and representative negatives, including Trustpay's payment-method-specific access-token rule.
+## Named policies
 
-## Build
+New code uses `locker_id_policy_for (method, lookup_policy)`. The lookup policy
+is either `lookup_saved_customer_method` or `skip_customer_method_lookup`; the
+result is `persist_locker_id` or `omit_locker_id`. The former Boolean API is a
+compatibility adapter, not the core policy representation.
 
-Use the current Idriç compiler executable through `IDRIC`:
+## Acceptance
 
 ```sh
-make -f idric.mk
-make -f idric.mk test
+make -f idric.mk check-source
+make -f idric.mk test IDRIC=/path/to/current/Idric/_/build/exec/idris2
+# Or use the top-level entrypoint with the compiler already on PATH:
+./check-types
 ```
 
-The default remains `idris2`, matching the current Idriç repositories.
+`IDRIC` denotes the built Idriç compiler, currently named `idris2`, not stock
+Idris 2 and not the `_/edric` bootstrap launcher. Build from the current Idriç
+branch and record its commit; the historical baseline below is a behavior
+fixture, not a compiler pin.
 
-## Porting order
+The additional runtime matrix covers 5,803 cases: two connector/method products
+of 155 × 16, five connector-only domains of 155, all 6 × 6 state transitions,
+and both lookup policies for each of 16 payment methods. It also typechecks a
+positive value for each capability constructor. The three original test
+executables remain in the full suite.
 
-Continue with pure domain behavior before infrastructure:
+There are 45 negative-compilation cases: all 32 prohibited state edges, plus
+wrong-connector, wrong-method, wrong-capability, forged-Boolean, unchecked
+optional-certificate, result-index, and primitive-policy/connector cases.
+Every rejection has a successful-compilation control. Missing imports, missing
+compilers, syntax failures and unresolved holes must not count as rejections.
+Separate fresh compilation directories prevent a cached positive from passing
+as a negative result.
 
-1. remaining routing-relevant `common_enums` domains, especially `PaymentMethodType`, `PayoutType`, and currency decimal semantics
-2. deterministic routing decision data and selection logic
-3. connector request/response transformations
-4. network boundaries through Idric-Net
-5. storage and service boundaries last
+The Python source audit is intentionally narrow and fail-closed. It compares
+finite constructor indices, lookup clauses and compatibility projections with
+the frozen pre-refactor rules. Its two unit tests include ten deliberately
+broken mutations. It is **not** an Idriç parser, typechecker, runtime or Rust
+execution. The full target exits 77, not success, when the compiler is missing.
+Logs and a machine-readable receipt are written under `_/build/type-contract/`.
 
-Do not remove a Rust implementation until its Idriç replacement has mechanical acceptance coverage.
+The behavior baseline is `1b64304318bbd50c7d9c91da75a9fc2ffcedd974`.
+Both reconstructed pre-refactor source files were checked against their Git
+blob hashes before deriving the fixture. The checked-in local receipt records
+5,803 source-rule comparisons passing and compiler/runtime/rejection execution
+as **SKIP**, because this session has no Idriç compiler executable. Do not turn
+that source result into a compiler acceptance claim.
+
+## Boundaries still to port
+
+Access-token support does not mean permission to move money, nor does its
+absence mean a connector cannot accept payments. An order-creation requirement
+is not evidence that an order has already been created. Overcapture support
+is not evidence that a particular amount is permitted. Credentials, merchant
+configuration, amounts, quotas, external responses and storage are not covered
+by these certificates.
+
+Money/currency relationships, bounded identifiers, `PaymentMethodType`
+compatibility, payout domains, payload validation and routing remain separate
+conversion work. They need their actual protocol/provider constraints, not
+invented restrictions or renamed `String`/integer carriers. Preserve the Rust
+implementation and source-specific behavior while establishing those types.

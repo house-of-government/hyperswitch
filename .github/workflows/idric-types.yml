@@ -1,0 +1,44 @@
+name: Idric type contracts
+
+on:
+  pull_request:
+    paths:
+      - 'HyperSwitch.idric'
+      - 'HyperSwitch/**'
+      - 'tests/*.idric'
+      - 'hyperswitch.ipkg'
+      - 'idric.mk'
+      - '_/tests/**'
+      - '.github/workflows/idric-types.yml'
+  push:
+    branches: ['idric/**']
+
+permissions:
+  contents: read
+
+jobs:
+  type-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source-rule audit and mutation tests
+        run: make -f idric.mk check-source
+      - name: Build the current Idric compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl
+          git clone --depth 1 --single-branch --branch 'Idriç' https://github.com/isomorphisms/Idric "$RUNNER_TEMP/Idric"
+          git -C "$RUNNER_TEMP/Idric" rev-parse HEAD > _/build/type-contract/compiler-head.txt
+          cd "$RUNNER_TEMP/Idric"
+          ./_/edric bootstrap
+      - name: Compile, run, and reject illegal constructions
+        run: |
+          export PATH="$RUNNER_TEMP/Idric/_/.tools/bin:$PATH"
+          make -f idric.mk test IDRIC="$RUNNER_TEMP/Idric/_/build/exec/idris2"
+      - name: Keep the exact compiler and acceptance receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: idric-type-contract-receipt
+          path: _/build/type-contract/

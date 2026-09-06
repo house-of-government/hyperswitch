@@ -1,0 +1,23 @@
+{
+  "source": {
+    "status": "PASS",
+    "kind": "source-rule audit, not compiler execution",
+    "source_comparisons": 5803,
+    "indexed_capability_constructors": 39,
+    "transition_constructors": 4,
+    "negative_compile_cases": 45,
+    "baseline_commit": "1b64304318bbd50c7d9c91da75a9fc2ffcedd974",
+    "baseline_blobs": {
+      "HyperSwitch/Connector.idric": "6dc2f3ff5725ecde08c47f3b8d18eb05bb3a2a10",
+      "HyperSwitch/PaymentMethod.idric": "76fdd6ba6cbeee8b77349a7c6ae45dc4a86fa37c"
+    }
+  },
+  "compiler": {
+    "status": "SKIP",
+    "reason": "compiler executable not found: idris2"
+  },
+  "sources_sha256": {
+    "HyperSwitch/Connector.idric": "b78cae3c5e003434637d10b23ac41c58593fb99b990ff26b60e980e3011adcad",
+    "HyperSwitch/PaymentMethod.idric": "92d992402d3dee9d8272bb227ff3d524354ef0704ca1bf2e717703d84aec84bb"
+  }
+}

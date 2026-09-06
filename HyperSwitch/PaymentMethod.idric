@@ -35,15 +35,34 @@ supports_installments card = True
 supports_installments _ = False
 
 public export
-should_persist_locker_id_for_saved_payment_method : payment_method → Bool → Bool
-should_persist_locker_id_for_saved_payment_method card _ = True
-should_persist_locker_id_for_saved_payment_method bank_debit _ = True
-should_persist_locker_id_for_saved_payment_method bank_redirect _ = True
-should_persist_locker_id_for_saved_payment_method wallet should_check_for_customer_pm =
-  not should_check_for_customer_pm
-should_persist_locker_id_for_saved_payment_method _ _ = False
+choice customer_payment_lookup one_of
+  lookup_saved_customer_method
+  skip_customer_method_lookup
 
--- Port of PaymentMethodStatus and From<AttemptStatus>.
+public export
+choice locker_id_policy one_of
+  persist_locker_id
+  omit_locker_id
+
+public export
+locker_id_policy_for : (payment_method, customer_payment_lookup) → locker_id_policy
+locker_id_policy_for (card, _) = persist_locker_id
+locker_id_policy_for (bank_debit, _) = persist_locker_id
+locker_id_policy_for (bank_redirect, _) = persist_locker_id
+locker_id_policy_for (wallet, lookup_saved_customer_method) = omit_locker_id
+locker_id_policy_for (wallet, skip_customer_method_lookup) = persist_locker_id
+locker_id_policy_for _ = omit_locker_id
+
+-- Compatibility adapter only; new code supplies the named lookup policy.
+public export
+should_persist_locker_id_for_saved_payment_method : payment_method → Bool → Bool
+should_persist_locker_id_for_saved_payment_method method check_saved =
+  let lookup_policy = if check_saved then lookup_saved_customer_method else skip_customer_method_lookup in
+    case locker_id_policy_for (method, lookup_policy) of
+      persist_locker_id ⇒ True
+      omit_locker_id ⇒ False
+
+-- Serialized observation labels, not permission to perform a transition.
 public export
 choice payment_method_status one_of
   payment_method_active
@@ -85,10 +104,46 @@ payment_method_status_from_attempt capture_review = payment_method_inactive
 payment_method_status_from_attempt charged = payment_method_active
 payment_method_status_from_attempt authorized = payment_method_active
 
+-- Exactly the four edges in the existing Rust PaymentMethodStatus rule.
+-- No generic "from/to + True" constructor is exposed.
+public export
+data payment_method_transition : (payment_method_status, payment_method_status) → Type where
+  Inactive_to_active : payment_method_transition (payment_method_inactive, payment_method_active)
+  Inactive_to_new : payment_method_transition (payment_method_inactive, payment_method_new)
+  New_to_active : payment_method_transition (payment_method_new, payment_method_active)
+  New_to_inactive : payment_method_transition (payment_method_new, payment_method_inactive)
+
+public export
+payment_method_transition_for : (edge : (payment_method_status, payment_method_status)) → Maybe (payment_method_transition edge)
+payment_method_transition_for (payment_method_inactive, payment_method_active) = Just Inactive_to_active
+payment_method_transition_for (payment_method_inactive, payment_method_new) = Just Inactive_to_new
+payment_method_transition_for (payment_method_new, payment_method_active) = Just New_to_active
+payment_method_transition_for (payment_method_new, payment_method_inactive) = Just New_to_inactive
+payment_method_transition_for _ = Nothing
+
+-- A validated change description. Storage must separately check that its
+-- observed source state/version still matches; this record does not do I/O.
+public export
+data PaymentMethodChange : (payment_method_status, payment_method_status) → Type where
+  MkPaymentMethodChange : (edge : (payment_method_status, payment_method_status)) →
+                          (0 permitted : payment_method_transition edge) →
+                          PaymentMethodChange edge
+
+public export
+payment_method_change_edge : PaymentMethodChange edge → (payment_method_status, payment_method_status)
+payment_method_change_edge (MkPaymentMethodChange edge _) = edge
+
+public export
+plan_payment_method_change : (edge : (payment_method_status, payment_method_status)) → Maybe (PaymentMethodChange edge)
+plan_payment_method_change edge =
+  case payment_method_transition_for edge of
+    Nothing ⇒ Nothing
+    Just permitted ⇒ Just (MkPaymentMethodChange edge permitted)
+
+-- Compatibility query; the indexed transition is authoritative.
 public export
 can_transition_payment_method_status : payment_method_status → payment_method_status → Bool
-can_transition_payment_method_status payment_method_inactive payment_method_active = True
-can_transition_payment_method_status payment_method_inactive payment_method_new = True
-can_transition_payment_method_status payment_method_new payment_method_active = True
-can_transition_payment_method_status payment_method_new payment_method_inactive = True
-can_transition_payment_method_status _ _ = False
+can_transition_payment_method_status before after =
+  case payment_method_transition_for (before, after) of
+    Nothing ⇒ False
+    Just _ ⇒ True
