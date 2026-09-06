@@ -1,5 +1,6 @@
 module Main
 
+import HyperSwitch.Attempt
 import HyperSwitch.PaymentMethod
 import System
 
@@ -30,16 +31,86 @@ locker_id_semantics =
   should_persist_locker_id_for_saved_payment_method wallet False &&
   not (should_persist_locker_id_for_saved_payment_method bank_transfer False)
 
+status_is_active : payment_method_status → Bool
+status_is_active payment_method_active = True
+status_is_active _ = False
+
+status_is_inactive : payment_method_status → Bool
+status_is_inactive payment_method_inactive = True
+status_is_inactive _ = False
+
+every_attempt_maps_to : (payment_method_status → Bool) → List attempt_status → Bool
+every_attempt_maps_to predicate [] = True
+every_attempt_maps_to predicate (status :: rest) =
+  predicate (payment_method_status_from_attempt status) &&
+  every_attempt_maps_to predicate rest
+
+inactive_attempt_statuses : List attempt_status
+inactive_attempt_statuses =
+  [ failure
+  , voided
+  , voided_post_charge
+  , started
+  , pending
+  , unresolved
+  , cod_initiated
+  , authorizing
+  , void_initiated
+  , authorization_failed
+  , router_declined
+  , authentication_successful
+  , payment_method_awaited
+  , authentication_failed
+  , authentication_pending
+  , capture_initiated
+  , capture_failed
+  , void_failed
+  , auto_refunded
+  , partial_charged
+  , partial_charged_and_chargeable
+  , partially_authorized
+  , confirmation_awaited
+  , device_data_collection_pending
+  , integrity_failure
+  , expired
+  , capture_review
+  ]
+
+attempt_to_payment_method_status_semantics : Bool
+attempt_to_payment_method_status_semantics =
+  status_is_active (payment_method_status_from_attempt charged) &&
+  status_is_active (payment_method_status_from_attempt authorized) &&
+  every_attempt_maps_to status_is_inactive inactive_attempt_statuses
+
+status_transition_semantics : Bool
+status_transition_semantics =
+  can_transition_payment_method_status payment_method_inactive payment_method_active &&
+  can_transition_payment_method_status payment_method_inactive payment_method_new &&
+  can_transition_payment_method_status payment_method_new payment_method_active &&
+  can_transition_payment_method_status payment_method_new payment_method_inactive &&
+  not (can_transition_payment_method_status payment_method_active payment_method_inactive) &&
+  not (can_transition_payment_method_status payment_method_processing payment_method_active) &&
+  not (can_transition_payment_method_status payment_method_awaiting_data payment_method_active) &&
+  not (can_transition_payment_method_status payment_method_redacted payment_method_active) &&
+  not (can_transition_payment_method_status payment_method_new payment_method_new)
+
 check : String → Bool → IO ()
 check name True = putStrLn ("ok   " ++ name)
 check name False = putStrLn ("FAIL " ++ name)
 
 all_pass : Bool
-all_pass = gift_card_semantics && installment_semantics && locker_id_semantics
+all_pass =
+  gift_card_semantics &&
+  installment_semantics &&
+  locker_id_semantics &&
+  attempt_to_payment_method_status_semantics &&
+  status_transition_semantics
 
 main : IO ()
 main = do
   check "payment-method gift-card semantics" gift_card_semantics
   check "payment-method installment semantics" installment_semantics
   check "payment-method locker-ID semantics" locker_id_semantics
+  check "AttemptStatus to PaymentMethodStatus mapping" attempt_to_payment_method_status_semantics
+  check "PaymentMethodStatus transition rules" status_transition_semantics
   if all_pass then pure () else exitFailure
