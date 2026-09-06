@@ -1,0 +1,71 @@
+module Main
+
+import HyperSwitch.Connector
+import System
+
+%default total
+
+every_connector : (connector → Bool) → List connector → Bool
+every_connector predicate [] = True
+every_connector predicate (value :: rest) =
+  predicate value && every_connector predicate rest
+
+file_storage_semantics : Bool
+file_storage_semantics =
+  every_connector supports_file_storage_module [stripe, checkout, worldpayvantiv] &&
+  not (supports_file_storage_module adyen) &&
+  not (supports_file_storage_module paypal)
+
+defend_dispute_semantics : Bool
+defend_dispute_semantics =
+  every_connector requires_defend_dispute [adyen, checkout] &&
+  not (requires_defend_dispute stripe) &&
+  not (requires_defend_dispute paypal)
+
+separate_authentication_semantics : Bool
+separate_authentication_semantics =
+  every_connector is_separate_authentication_supported
+    [ stripe
+    , checkout
+    , zift
+    , nmi
+    , braintree
+    , cybersource
+    , archipel
+    , nuvei
+    , adyen
+    ] &&
+  not (is_separate_authentication_supported airwallex) &&
+  not (is_separate_authentication_supported dummy_connector1)
+
+overcapture_semantics : Bool
+overcapture_semantics =
+  every_connector is_overcapture_supported_by_connector [stripe, adyen] &&
+  not (is_overcapture_supported_by_connector checkout)
+
+webhook_not_found_semantics : Bool
+webhook_not_found_semantics =
+  every_connector should_acknowledge_webhook_for_resource_not_found_errors
+    [adyenplatform, adyen] &&
+  not (should_acknowledge_webhook_for_resource_not_found_errors stripe)
+
+check : String → Bool → IO ()
+check name True = putStrLn ("ok   " ++ name)
+check name False = putStrLn ("FAIL " ++ name)
+
+all_pass : Bool
+all_pass =
+  file_storage_semantics &&
+  defend_dispute_semantics &&
+  separate_authentication_semantics &&
+  overcapture_semantics &&
+  webhook_not_found_semantics
+
+main : IO ()
+main = do
+  check "connector file-storage capability" file_storage_semantics
+  check "connector dispute-defense requirement" defend_dispute_semantics
+  check "connector separate-authentication capability" separate_authentication_semantics
+  check "connector overcapture capability" overcapture_semantics
+  check "connector webhook not-found acknowledgement" webhook_not_found_semantics
+  if all_pass then pure () else exitFailure
