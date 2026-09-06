@@ -13,11 +13,18 @@
     }
   },
   "compiler": {
-    "status": "SKIP",
-    "reason": "compiler executable not found: idris2"
+    "status": "PASS",
+    "commit": "d2463ec8a3a0dd4ac167029927452f3e83805dc3",
+    "version": "Idris 2, version 0.8.0-d2463ec8a",
+    "runtime_executables": 4,
+    "runtime_matrix_cases": 5803,
+    "positive_compile_controls": 45,
+    "negative_rejections": 45,
+    "rejection_diagnostic": "expected type mismatch; no import/parser/hole infrastructure failures"
   },
   "sources_sha256": {
-    "HyperSwitch/Connector.idric": "b78cae3c5e003434637d10b23ac41c58593fb99b990ff26b60e980e3011adcad",
-    "HyperSwitch/PaymentMethod.idric": "92d992402d3dee9d8272bb227ff3d524354ef0704ca1bf2e717703d84aec84bb"
+    "HyperSwitch/Attempt.idric": "6b63af89129e2520ed365ac5f4e8406b8c143c98c8960f5c78b0ee44d5699b20",
+    "HyperSwitch/Connector.idric": "9ee211fe28dbeb4f0c5af3a052631b8d69f904f73f7f3c10ed3c5f418eb42c2a",
+    "HyperSwitch/PaymentMethod.idric": "17ab83774783176fc6f489150fab018793381598bead58550f5b89973a2ba39c"
   }
 }

@@ -1,8 +1,9 @@
 # HyperSwitch → Idriç
 
 The Rust implementation is unchanged. The Idriç branch is a domain-library
-conversion, not a replacement payment service. It remains draft until the
-current Idriç compiler has built and run its acceptance suite.
+conversion, not a replacement payment service. The current compiler-backed
+acceptance suite has passed; this does not broaden the branch into operational
+payment behavior.
 
 ## Current domain coverage
 
@@ -109,10 +110,15 @@ Logs and a machine-readable receipt are written under `_/build/type-contract/`.
 
 The behavior baseline is `1b64304318bbd50c7d9c91da75a9fc2ffcedd974`.
 Both reconstructed pre-refactor source files were checked against their Git
-blob hashes before deriving the fixture. The checked-in local receipt records
-5,803 source-rule comparisons passing and compiler/runtime/rejection execution
-as **SKIP**, because this session has no Idriç compiler executable. Do not turn
-that source result into a compiler acceptance claim.
+blob hashes before deriving the fixture. The checked-in receipt now records a
+real compiler-backed acceptance run against Idriç commit
+`d2463ec8a3a0dd4ac167029927452f3e83805dc3`
+(`Idris 2, version 0.8.0-d2463ec8a`): all four runtime executables passed, the
+runtime matrix covered all 5,803 cases, all 45 positive controls compiled, and
+all 45 corresponding illegal constructions were rejected for expected type
+mismatches without import/parser/hole infrastructure failures. The receipt is
+tied to the exact source hashes and compiler commit and must be regenerated if
+either changes.
 
 ## Boundaries still to port
 
