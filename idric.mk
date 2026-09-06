@@ -8,6 +8,8 @@ all:
 test: all
 	$(IDRIC) tests/AttemptStatusTests.idric -o hyperswitch-attempt-tests
 	./build/exec/hyperswitch-attempt-tests
+	$(IDRIC) tests/ConnectorTests.idric -o hyperswitch-connector-tests
+	./build/exec/hyperswitch-connector-tests
 
 clean:
 	rm -rf build
