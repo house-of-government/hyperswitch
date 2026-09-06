@@ -1,5 +1,7 @@
 module HyperSwitch.Connector
 
+import HyperSwitch.PaymentMethod
+
 %default total
 
 -- Port of crates/common_enums/src/connector_enums.rs::Connector.
@@ -160,6 +162,35 @@ choice connector one_of
   zen
   zift
   zsl
+
+public export
+supports_access_token : connector → payment_method → Bool
+supports_access_token airwallex _ = True
+supports_access_token deutschebank _ = True
+supports_access_token globalpay _ = True
+supports_access_token jpmorgan _ = True
+supports_access_token moneris _ = True
+supports_access_token nordea _ = True
+supports_access_token paypal _ = True
+supports_access_token payu _ = True
+supports_access_token trustpay bank_redirect = True
+supports_access_token trustpay bank_transfer = True
+supports_access_token tesouro _ = True
+supports_access_token iatapay _ = True
+supports_access_token volt _ = True
+supports_access_token itaubank _ = True
+supports_access_token facilitapay _ = True
+supports_access_token dwolla _ = True
+supports_access_token santander _ = True
+supports_access_token truelayer _ = True
+supports_access_token fiservcommercehub _ = True
+supports_access_token _ _ = False
+
+public export
+requires_order_creation_before_payment : connector → payment_method → Bool
+requires_order_creation_before_payment razorpay _ = True
+requires_order_creation_before_payment airwallex _ = True
+requires_order_creation_before_payment _ _ = False
 
 public export
 supports_file_storage_module : connector → Bool
