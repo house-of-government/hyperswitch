@@ -1,6 +1,6 @@
 module HyperSwitch.Connector
 
-import HyperSwitch.PaymentMethod
+import public HyperSwitch.PaymentMethod
 
 %default total
 
