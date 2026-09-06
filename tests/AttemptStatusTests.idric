@@ -1,0 +1,244 @@
+module Main
+
+import HyperSwitch.Attempt
+import System
+
+%default total
+
+every_status : (attempt_status → Bool) → List attempt_status → Bool
+every_status predicate [] = True
+every_status predicate (status :: rest) =
+  predicate status && every_status predicate rest
+
+no_status : (attempt_status → Bool) → List attempt_status → Bool
+no_status predicate [] = True
+no_status predicate (status :: rest) =
+  not (predicate status) && no_status predicate rest
+
+terminal_true : List attempt_status
+terminal_true =
+  [ router_declined
+  , charged
+  , auto_refunded
+  , voided
+  , void_failed
+  , capture_failed
+  , failure
+  , partial_charged
+  , expired
+  ]
+
+terminal_false : List attempt_status
+terminal_false =
+  [ started
+  , authentication_failed
+  , authentication_pending
+  , authentication_successful
+  , authorized
+  , authorization_failed
+  , authorizing
+  , cod_initiated
+  , voided_post_charge
+  , void_initiated
+  , capture_initiated
+  , partially_authorized
+  , partial_charged_and_chargeable
+  , unresolved
+  , pending
+  , payment_method_awaited
+  , confirmation_awaited
+  , device_data_collection_pending
+  , integrity_failure
+  , capture_review
+  ]
+
+payment_terminal_failure_true : List attempt_status
+payment_terminal_failure_true =
+  [ router_declined
+  , failure
+  , expired
+  , void_failed
+  , capture_failed
+  , authentication_failed
+  , authorization_failed
+  ]
+
+payment_terminal_failure_false : List attempt_status
+payment_terminal_failure_false =
+  [ started
+  , authentication_pending
+  , authentication_successful
+  , authorized
+  , charged
+  , authorizing
+  , cod_initiated
+  , voided
+  , voided_post_charge
+  , void_initiated
+  , capture_initiated
+  , auto_refunded
+  , partial_charged
+  , partially_authorized
+  , partial_charged_and_chargeable
+  , unresolved
+  , pending
+  , payment_method_awaited
+  , confirmation_awaited
+  , device_data_collection_pending
+  , integrity_failure
+  , capture_review
+  ]
+
+success_true : List attempt_status
+success_true = [charged, partial_charged]
+
+success_false : List attempt_status
+success_false =
+  [ started
+  , authentication_failed
+  , router_declined
+  , authentication_pending
+  , authentication_successful
+  , authorized
+  , authorization_failed
+  , authorizing
+  , cod_initiated
+  , voided
+  , voided_post_charge
+  , void_initiated
+  , capture_initiated
+  , capture_failed
+  , void_failed
+  , auto_refunded
+  , partially_authorized
+  , partial_charged_and_chargeable
+  , unresolved
+  , pending
+  , failure
+  , payment_method_awaited
+  , confirmation_awaited
+  , device_data_collection_pending
+  , integrity_failure
+  , expired
+  , capture_review
+  ]
+
+authorization_success_true : List attempt_status
+authorization_success_true =
+  [ authorized
+  , partially_authorized
+  , charged
+  , partial_charged
+  , partial_charged_and_chargeable
+  ]
+
+authorization_success_false : List attempt_status
+authorization_success_false =
+  [ started
+  , authentication_failed
+  , router_declined
+  , authentication_pending
+  , authentication_successful
+  , authorization_failed
+  , authorizing
+  , cod_initiated
+  , voided
+  , voided_post_charge
+  , void_initiated
+  , capture_initiated
+  , capture_failed
+  , void_failed
+  , auto_refunded
+  , unresolved
+  , pending
+  , failure
+  , payment_method_awaited
+  , confirmation_awaited
+  , device_data_collection_pending
+  , integrity_failure
+  , expired
+  , capture_review
+  ]
+
+update_payment_method_true : List attempt_status
+update_payment_method_true =
+  [ charged
+  , partial_charged
+  , authorized
+  , partially_authorized
+  , authentication_successful
+  , partial_charged_and_chargeable
+  ]
+
+update_payment_method_false : List attempt_status
+update_payment_method_false =
+  [ started
+  , authentication_failed
+  , router_declined
+  , authentication_pending
+  , authorization_failed
+  , authorizing
+  , cod_initiated
+  , voided
+  , voided_post_charge
+  , void_initiated
+  , capture_initiated
+  , capture_failed
+  , void_failed
+  , auto_refunded
+  , unresolved
+  , pending
+  , failure
+  , payment_method_awaited
+  , confirmation_awaited
+  , device_data_collection_pending
+  , integrity_failure
+  , expired
+  , capture_review
+  ]
+
+terminal_status_semantics : Bool
+terminal_status_semantics =
+  every_status is_terminal_status terminal_true &&
+  no_status is_terminal_status terminal_false
+
+payment_terminal_failure_semantics : Bool
+payment_terminal_failure_semantics =
+  every_status is_payment_terminal_failure payment_terminal_failure_true &&
+  no_status is_payment_terminal_failure payment_terminal_failure_false
+
+success_semantics : Bool
+success_semantics =
+  every_status is_success success_true &&
+  no_status is_success success_false
+
+authorization_success_semantics : Bool
+authorization_success_semantics =
+  every_status is_authorization_success authorization_success_true &&
+  no_status is_authorization_success authorization_success_false
+
+update_payment_method_semantics : Bool
+update_payment_method_semantics =
+  every_status should_update_payment_method update_payment_method_true &&
+  no_status should_update_payment_method update_payment_method_false
+
+check : String → Bool → IO ()
+check name True = putStrLn ("ok   " ++ name)
+check name False = putStrLn ("FAIL " ++ name)
+
+all_pass : Bool
+all_pass =
+  terminal_status_semantics &&
+  payment_terminal_failure_semantics &&
+  success_semantics &&
+  authorization_success_semantics &&
+  update_payment_method_semantics
+
+main : IO ()
+main = do
+  check "AttemptStatus terminal truth table" terminal_status_semantics
+  check "AttemptStatus payment-terminal-failure truth table" payment_terminal_failure_semantics
+  check "AttemptStatus success truth table" success_semantics
+  check "AttemptStatus authorization-success truth table" authorization_success_semantics
+  check "AttemptStatus payment-method-update truth table" update_payment_method_semantics
+  if all_pass then pure () else exitFailure
