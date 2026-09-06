@@ -10,6 +10,37 @@ every_connector predicate [] = True
 every_connector predicate (value :: rest) =
   predicate value && every_connector predicate rest
 
+access_token_semantics : Bool
+access_token_semantics =
+  supports_access_token airwallex card &&
+  supports_access_token deutschebank wallet &&
+  supports_access_token globalpay voucher &&
+  supports_access_token jpmorgan card &&
+  supports_access_token moneris card &&
+  supports_access_token nordea bank_transfer &&
+  supports_access_token paypal wallet &&
+  supports_access_token payu card &&
+  supports_access_token tesouro card &&
+  supports_access_token iatapay bank_redirect &&
+  supports_access_token volt bank_transfer &&
+  supports_access_token itaubank bank_redirect &&
+  supports_access_token facilitapay card &&
+  supports_access_token dwolla bank_transfer &&
+  supports_access_token santander bank_redirect &&
+  supports_access_token truelayer open_banking &&
+  supports_access_token fiservcommercehub card &&
+  supports_access_token trustpay bank_redirect &&
+  supports_access_token trustpay bank_transfer &&
+  not (supports_access_token trustpay card) &&
+  not (supports_access_token stripe card)
+
+order_creation_semantics : Bool
+order_creation_semantics =
+  requires_order_creation_before_payment razorpay card &&
+  requires_order_creation_before_payment razorpay wallet &&
+  requires_order_creation_before_payment airwallex bank_transfer &&
+  not (requires_order_creation_before_payment stripe card)
+
 file_storage_semantics : Bool
 file_storage_semantics =
   every_connector supports_file_storage_module [stripe, checkout, worldpayvantiv] &&
@@ -55,6 +86,8 @@ check name False = putStrLn ("FAIL " ++ name)
 
 all_pass : Bool
 all_pass =
+  access_token_semantics &&
+  order_creation_semantics &&
   file_storage_semantics &&
   defend_dispute_semantics &&
   separate_authentication_semantics &&
@@ -63,6 +96,8 @@ all_pass =
 
 main : IO ()
 main = do
+  check "connector access-token capability" access_token_semantics
+  check "connector pre-payment order creation" order_creation_semantics
   check "connector file-storage capability" file_storage_semantics
   check "connector dispute-defense requirement" defend_dispute_semantics
   check "connector separate-authentication capability" separate_authentication_semantics
