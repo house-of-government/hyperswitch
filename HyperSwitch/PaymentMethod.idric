@@ -107,11 +107,17 @@ payment_method_status_from_attempt authorized = payment_method_active
 -- Exactly the four edges in the existing Rust PaymentMethodStatus rule.
 -- No generic "from/to + True" constructor is exposed.
 public export
-data payment_method_transition : (payment_method_status, payment_method_status) → Type where
-  Inactive_to_active : payment_method_transition (payment_method_inactive, payment_method_active)
-  Inactive_to_new : payment_method_transition (payment_method_inactive, payment_method_new)
-  New_to_active : payment_method_transition (payment_method_new, payment_method_active)
-  New_to_inactive : payment_method_transition (payment_method_new, payment_method_inactive)
+data PaymentMethodTransition : (payment_method_status, payment_method_status) → Type where
+  Inactive_to_active : PaymentMethodTransition (payment_method_inactive, payment_method_active)
+  Inactive_to_new : PaymentMethodTransition (payment_method_inactive, payment_method_new)
+  New_to_active : PaymentMethodTransition (payment_method_new, payment_method_active)
+  New_to_inactive : PaymentMethodTransition (payment_method_new, payment_method_inactive)
+
+-- Keep the public snake_case type boundary while satisfying current Idric's
+-- capitalised identifier requirement for data declarations.
+public export
+payment_method_transition : (payment_method_status, payment_method_status) → Type
+payment_method_transition = PaymentMethodTransition
 
 public export
 payment_method_transition_for : (edge : (payment_method_status, payment_method_status)) → Maybe (payment_method_transition edge)

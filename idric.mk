@@ -8,11 +8,11 @@ all:
 
 check-source:
 	$(PYTHON) _/tests/test_source_audit.py
-	$(PYTHON) _/tests/check_types.py --source-only
+	$(PYTHON) _/tests/current_idric_check_types.py --source-only
 
 test:
 	$(PYTHON) _/tests/test_source_audit.py
-	$(PYTHON) _/tests/check_types.py --compiler "$(IDRIC)"
+	$(PYTHON) _/tests/current_idric_check_types.py --compiler "$(IDRIC)"
 
 clean:
 	rm -rf build _/build
