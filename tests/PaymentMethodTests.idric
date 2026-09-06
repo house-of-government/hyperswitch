@@ -1,0 +1,45 @@
+module Main
+
+import HyperSwitch.PaymentMethod
+import System
+
+%default total
+
+gift_card_semantics : Bool
+gift_card_semantics =
+  is_gift_card gift_card &&
+  not (is_gift_card card) &&
+  not (is_gift_card wallet)
+
+installment_semantics : Bool
+installment_semantics =
+  supports_installments card &&
+  not (supports_installments card_redirect) &&
+  not (supports_installments pay_later) &&
+  not (supports_installments wallet)
+
+locker_id_semantics : Bool
+locker_id_semantics =
+  should_persist_locker_id_for_saved_payment_method card True &&
+  should_persist_locker_id_for_saved_payment_method card False &&
+  should_persist_locker_id_for_saved_payment_method bank_debit True &&
+  should_persist_locker_id_for_saved_payment_method bank_debit False &&
+  should_persist_locker_id_for_saved_payment_method bank_redirect True &&
+  should_persist_locker_id_for_saved_payment_method bank_redirect False &&
+  not (should_persist_locker_id_for_saved_payment_method wallet True) &&
+  should_persist_locker_id_for_saved_payment_method wallet False &&
+  not (should_persist_locker_id_for_saved_payment_method bank_transfer False)
+
+check : String → Bool → IO ()
+check name True = putStrLn ("ok   " ++ name)
+check name False = putStrLn ("FAIL " ++ name)
+
+all_pass : Bool
+all_pass = gift_card_semantics && installment_semantics && locker_id_semantics
+
+main : IO ()
+main = do
+  check "payment-method gift-card semantics" gift_card_semantics
+  check "payment-method installment semantics" installment_semantics
+  check "payment-method locker-ID semantics" locker_id_semantics
+  if all_pass then pure () else exitFailure
