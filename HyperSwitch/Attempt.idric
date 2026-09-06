@@ -1,0 +1,125 @@
+module HyperSwitch.Attempt
+
+%default total
+
+-- Initial Idriç port of crates/common_enums/src/enums.rs::AttemptStatus.
+public export
+choice attempt_status one_of
+  started
+  authentication_failed
+  router_declined
+  authentication_pending
+  authentication_successful
+  authorized
+  authorization_failed
+  charged
+  authorizing
+  cod_initiated
+  voided
+  voided_post_charge
+  void_initiated
+  capture_initiated
+  capture_failed
+  void_failed
+  auto_refunded
+  partial_charged
+  partially_authorized
+  partial_charged_and_chargeable
+  unresolved
+  pending
+  failure
+  payment_method_awaited
+  confirmation_awaited
+  device_data_collection_pending
+  integrity_failure
+  expired
+  capture_review
+
+public export
+is_terminal_status : attempt_status → Bool
+is_terminal_status router_declined = True
+is_terminal_status charged = True
+is_terminal_status auto_refunded = True
+is_terminal_status voided = True
+is_terminal_status void_failed = True
+is_terminal_status capture_failed = True
+is_terminal_status failure = True
+is_terminal_status partial_charged = True
+is_terminal_status expired = True
+is_terminal_status started = False
+is_terminal_status authentication_failed = False
+is_terminal_status authentication_pending = False
+is_terminal_status authentication_successful = False
+is_terminal_status authorized = False
+is_terminal_status partially_authorized = False
+is_terminal_status authorization_failed = False
+is_terminal_status authorizing = False
+is_terminal_status cod_initiated = False
+is_terminal_status voided_post_charge = False
+is_terminal_status void_initiated = False
+is_terminal_status capture_initiated = False
+is_terminal_status partial_charged_and_chargeable = False
+is_terminal_status unresolved = False
+is_terminal_status pending = False
+is_terminal_status payment_method_awaited = False
+is_terminal_status confirmation_awaited = False
+is_terminal_status device_data_collection_pending = False
+is_terminal_status integrity_failure = False
+is_terminal_status capture_review = False
+
+public export
+is_payment_terminal_failure : attempt_status → Bool
+is_payment_terminal_failure router_declined = True
+is_payment_terminal_failure failure = True
+is_payment_terminal_failure expired = True
+is_payment_terminal_failure void_failed = True
+is_payment_terminal_failure capture_failed = True
+is_payment_terminal_failure authentication_failed = True
+is_payment_terminal_failure authorization_failed = True
+is_payment_terminal_failure started = False
+is_payment_terminal_failure authentication_pending = False
+is_payment_terminal_failure authentication_successful = False
+is_payment_terminal_failure authorized = False
+is_payment_terminal_failure charged = False
+is_payment_terminal_failure authorizing = False
+is_payment_terminal_failure cod_initiated = False
+is_payment_terminal_failure voided = False
+is_payment_terminal_failure voided_post_charge = False
+is_payment_terminal_failure void_initiated = False
+is_payment_terminal_failure capture_initiated = False
+is_payment_terminal_failure auto_refunded = False
+is_payment_terminal_failure partial_charged = False
+is_payment_terminal_failure partially_authorized = False
+is_payment_terminal_failure partial_charged_and_chargeable = False
+is_payment_terminal_failure unresolved = False
+is_payment_terminal_failure pending = False
+is_payment_terminal_failure payment_method_awaited = False
+is_payment_terminal_failure confirmation_awaited = False
+is_payment_terminal_failure device_data_collection_pending = False
+is_payment_terminal_failure integrity_failure = False
+is_payment_terminal_failure capture_review = False
+
+public export
+is_success : attempt_status → Bool
+is_success charged = True
+is_success partial_charged = True
+is_success _ = False
+
+public export
+is_authorization_success : attempt_status → Bool
+is_authorization_success authorized = True
+is_authorization_success partially_authorized = True
+is_authorization_success charged = True
+is_authorization_success partial_charged = True
+is_authorization_success partial_charged_and_chargeable = True
+is_authorization_success _ = False
+
+public export
+should_update_payment_method : attempt_status → Bool
+should_update_payment_method charged = True
+should_update_payment_method partial_charged = True
+should_update_payment_method authorized = True
+should_update_payment_method partially_authorized = True
+should_update_payment_method authentication_successful = True
+should_update_payment_method partial_charged_and_chargeable = True
+should_update_payment_method _ = False
