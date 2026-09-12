@@ -1,0 +1,533 @@
+module Main
+
+import HyperSwitch.Connector
+import HyperSwitch.PaymentMethod
+import System
+
+%default total
+
+-- Frozen expectations from the pre-refactor head recorded in type_baseline.json.
+-- They deliberately do not call the new deciders to decide expected answers.
+present : Maybe any_type → Bool
+present Nothing = False
+present (Just _) = True
+
+every : (any_type → Bool) → List any_type → Bool
+every predicate [] = True
+every predicate (value :: rest) = predicate value && every predicate rest
+
+connectors : List connector
+connectors =
+  [ absa_sanlam
+  , authipay
+  , adyenplatform
+  , dummy_billing_connector
+  , dummy_connector1
+  , dummy_connector2
+  , dummy_connector3
+  , dummy_connector4
+  , dummy_connector5
+  , dummy_connector6
+  , dummy_connector7
+  , aci
+  , adyen
+  , affirm
+  , airwallex
+  , amazonpay
+  , archipel
+  , authorizedotnet
+  , bambora
+  , bamboraapac
+  , bankofamerica
+  , barclaycard
+  , billwerk
+  , bitpay
+  , bluesnap
+  , blackhawknetwork
+  , calida
+  , boku
+  , braintree
+  , breadpay
+  , cardinal
+  , cashtocode
+  , celero
+  , chargebee
+  , checkbook
+  , checkout
+  , citigate
+  , coinbase
+  , coingate
+  , custombilling
+  , cryptopay
+  , ctp_mastercard
+  , ctp_visa
+  , cybersource
+  , cybersourcedecisionmanager
+  , datatrans
+  , deutschebank
+  , digitalvirgo
+  , dlocal
+  , dwolla
+  , ebanx
+  , envoy
+  , elavon
+  , facilitapay
+  , finix
+  , fiserv
+  , fiservemea
+  , fiservcommercehub
+  , fiuu
+  , flexiti
+  , forte
+  , getnet
+  , gigadat
+  , givepayments
+  , globalpay
+  , globepay
+  , gocardless
+  , gotyme_sanlam
+  , gpayments
+  , hipay
+  , helcim
+  , hyperpg
+  , hyperswitch_vault
+  , interpayments
+  , inespay
+  , iatapay
+  , ilixium
+  , imerchantsolutions
+  , itaubank
+  , jpmorgan
+  , juspay
+  , juspaythreedsserver
+  , klarna
+  , loonio
+  , mifinity
+  , mollie
+  , moneris
+  , multisafepay
+  , netcetera
+  , nexinets
+  , nexixpay
+  , nmi
+  , nomupay
+  , noon
+  , nordea
+  , novalnet
+  , nuvei
+  , opennode
+  , paybox
+  , payload
+  , payme
+  , payone
+  , paypal
+  , paysafe
+  , paystack
+  , paytm
+  , payconex
+  , payu
+  , peachpayments
+  , payjustnow
+  , payjustnowinstore
+  , phonepe
+  , placetopay
+  , powertranz
+  , prophetpay
+  , rapyd
+  , razorpay
+  , recurly
+  , redsys
+  , revolv3
+  , santander
+  , shift4
+  , silverflow
+  , square
+  , stax
+  , stripe
+  , stripebilling
+  , taxjar
+  , threedsecureio
+  , tesouro
+  , tokenex
+  , tokenio
+  , trustly
+  , truelayer
+  , trustpay
+  , trustpayments
+  , tsys
+  , tsys_transit
+  , vgs
+  , volt
+  , wellsfargo
+  , wise
+  , worldline
+  , worldpay
+  , worldpayraft
+  , worldpayvantiv
+  , worldpayxml
+  , worldpaymodular
+  , signifyd
+  , plaid
+  , riskified
+  , xendit
+  , zen
+  , zift
+  , zsl
+  ]
+
+methods : List payment_method
+methods =
+  [ card
+  , card_redirect
+  , pay_later
+  , wallet
+  , bank_redirect
+  , bank_transfer
+  , crypto
+  , bank_debit
+  , reward
+  , real_time_payment
+  , upi
+  , voucher
+  , gift_card
+  , open_banking
+  , mobile_payment
+  , network_token
+  ]
+
+statuses : List payment_method_status
+statuses =
+  [ payment_method_active
+  , payment_method_inactive
+  , payment_method_processing
+  , payment_method_awaiting_data
+  , payment_method_new
+  , payment_method_redacted
+  ]
+
+expected_supports_access_token : connector → payment_method → Bool
+expected_supports_access_token airwallex _ = True
+expected_supports_access_token deutschebank _ = True
+expected_supports_access_token globalpay _ = True
+expected_supports_access_token jpmorgan _ = True
+expected_supports_access_token moneris _ = True
+expected_supports_access_token nordea _ = True
+expected_supports_access_token paypal _ = True
+expected_supports_access_token payu _ = True
+expected_supports_access_token tesouro _ = True
+expected_supports_access_token iatapay _ = True
+expected_supports_access_token volt _ = True
+expected_supports_access_token itaubank _ = True
+expected_supports_access_token facilitapay _ = True
+expected_supports_access_token dwolla _ = True
+expected_supports_access_token santander _ = True
+expected_supports_access_token truelayer _ = True
+expected_supports_access_token fiservcommercehub _ = True
+expected_supports_access_token trustpay bank_redirect = True
+expected_supports_access_token trustpay bank_transfer = True
+expected_supports_access_token _ _ = False
+
+check_access_token_support_pair : (connector, payment_method) → Bool
+check_access_token_support_pair (provider, method) =
+  let expected = expected_supports_access_token provider method in
+    present (access_token_support_for (provider, method)) == expected &&
+    supports_access_token provider method == expected &&
+    present (plan_access_token (provider, method)) == expected
+
+check_access_token_support_method : connector → payment_method → Bool
+check_access_token_support_method provider method = check_access_token_support_pair (provider, method)
+
+check_access_token_support_connector : connector → Bool
+check_access_token_support_connector provider = every (check_access_token_support_method provider) methods
+
+check_access_token_support : Bool
+check_access_token_support = every check_access_token_support_connector connectors
+
+expected_requires_order_creation_before_payment : connector → payment_method → Bool
+expected_requires_order_creation_before_payment razorpay _ = True
+expected_requires_order_creation_before_payment airwallex _ = True
+expected_requires_order_creation_before_payment _ _ = False
+
+check_order_creation_requirement_method : connector → payment_method → Bool
+check_order_creation_requirement_method provider method =
+  let expected = expected_requires_order_creation_before_payment provider method in
+    present (order_creation_requirement_for provider) == expected &&
+    requires_order_creation_before_payment provider method == expected
+
+check_order_creation_requirement_connector : connector → Bool
+check_order_creation_requirement_connector provider = every (check_order_creation_requirement_method provider) methods
+
+check_order_creation_requirement : Bool
+check_order_creation_requirement = every check_order_creation_requirement_connector connectors
+
+expected_supports_file_storage_module : connector → Bool
+expected_supports_file_storage_module stripe = True
+expected_supports_file_storage_module checkout = True
+expected_supports_file_storage_module worldpayvantiv = True
+expected_supports_file_storage_module _ = False
+
+check_file_storage_support_connector : connector → Bool
+check_file_storage_support_connector provider =
+  let expected = expected_supports_file_storage_module provider in
+    present (file_storage_support_for provider) == expected &&
+    supports_file_storage_module provider == expected
+
+check_file_storage_support : Bool
+check_file_storage_support = every check_file_storage_support_connector connectors
+
+expected_requires_defend_dispute : connector → Bool
+expected_requires_defend_dispute adyen = True
+expected_requires_defend_dispute checkout = True
+expected_requires_defend_dispute _ = False
+
+check_dispute_defence_requirement_connector : connector → Bool
+check_dispute_defence_requirement_connector provider =
+  let expected = expected_requires_defend_dispute provider in
+    present (dispute_defence_requirement_for provider) == expected &&
+    requires_defend_dispute provider == expected
+
+check_dispute_defence_requirement : Bool
+check_dispute_defence_requirement = every check_dispute_defence_requirement_connector connectors
+
+expected_is_separate_authentication_supported : connector → Bool
+expected_is_separate_authentication_supported stripe = True
+expected_is_separate_authentication_supported checkout = True
+expected_is_separate_authentication_supported zift = True
+expected_is_separate_authentication_supported nmi = True
+expected_is_separate_authentication_supported braintree = True
+expected_is_separate_authentication_supported cybersource = True
+expected_is_separate_authentication_supported archipel = True
+expected_is_separate_authentication_supported nuvei = True
+expected_is_separate_authentication_supported adyen = True
+expected_is_separate_authentication_supported _ = False
+
+check_separate_authentication_support_connector : connector → Bool
+check_separate_authentication_support_connector provider =
+  let expected = expected_is_separate_authentication_supported provider in
+    present (separate_authentication_support_for provider) == expected &&
+    is_separate_authentication_supported provider == expected
+
+check_separate_authentication_support : Bool
+check_separate_authentication_support = every check_separate_authentication_support_connector connectors
+
+expected_is_overcapture_supported_by_connector : connector → Bool
+expected_is_overcapture_supported_by_connector stripe = True
+expected_is_overcapture_supported_by_connector adyen = True
+expected_is_overcapture_supported_by_connector _ = False
+
+check_overcapture_support_connector : connector → Bool
+check_overcapture_support_connector provider =
+  let expected = expected_is_overcapture_supported_by_connector provider in
+    present (overcapture_support_for provider) == expected &&
+    is_overcapture_supported_by_connector provider == expected
+
+check_overcapture_support : Bool
+check_overcapture_support = every check_overcapture_support_connector connectors
+
+expected_should_acknowledge_webhook_for_resource_not_found_errors : connector → Bool
+expected_should_acknowledge_webhook_for_resource_not_found_errors adyenplatform = True
+expected_should_acknowledge_webhook_for_resource_not_found_errors adyen = True
+expected_should_acknowledge_webhook_for_resource_not_found_errors _ = False
+
+check_missing_webhook_acknowledgement_connector : connector → Bool
+check_missing_webhook_acknowledgement_connector provider =
+  let expected = expected_should_acknowledge_webhook_for_resource_not_found_errors provider in
+    present (missing_webhook_acknowledgement_for provider) == expected &&
+    should_acknowledge_webhook_for_resource_not_found_errors provider == expected
+
+check_missing_webhook_acknowledgement : Bool
+check_missing_webhook_acknowledgement = every check_missing_webhook_acknowledgement_connector connectors
+
+expected_transition : payment_method_status → payment_method_status → Bool
+expected_transition payment_method_inactive payment_method_active = True
+expected_transition payment_method_inactive payment_method_new = True
+expected_transition payment_method_new payment_method_active = True
+expected_transition payment_method_new payment_method_inactive = True
+expected_transition _ _ = False
+
+check_transition_target : payment_method_status → payment_method_status → Bool
+check_transition_target before after =
+  let expected = expected_transition before after in
+    present (payment_method_transition_for (before, after)) == expected &&
+    can_transition_payment_method_status before after == expected &&
+    present (plan_payment_method_change (before, after)) == expected
+
+check_transition_source : payment_method_status → Bool
+check_transition_source before = every (check_transition_target before) statuses
+
+check_transitions : Bool
+check_transitions = every check_transition_source statuses
+
+policy_persists : locker_id_policy → Bool
+policy_persists persist_locker_id = True
+policy_persists omit_locker_id = False
+
+expected_locker : payment_method → Bool → Bool
+expected_locker card _ = True
+expected_locker bank_debit _ = True
+expected_locker bank_redirect _ = True
+expected_locker wallet check_saved = not check_saved
+expected_locker _ _ = False
+
+check_locker_method : payment_method → Bool
+check_locker_method method =
+  policy_persists (locker_id_policy_for (method, lookup_saved_customer_method)) == expected_locker method True &&
+  policy_persists (locker_id_policy_for (method, skip_customer_method_lookup)) == expected_locker method False &&
+  should_persist_locker_id_for_saved_payment_method method True == expected_locker method True &&
+  should_persist_locker_id_for_saved_payment_method method False == expected_locker method False
+
+check_locker : Bool
+check_locker = every check_locker_method methods
+
+-- These declarations must typecheck, independently of runtime projections.
+valid_token_plan : AccessTokenPlan (trustpay, bank_transfer)
+valid_token_plan = MkAccessTokenPlan (trustpay, bank_transfer) Trustpay_transfer_token
+
+valid_change : PaymentMethodChange (payment_method_inactive, payment_method_active)
+valid_change = MkPaymentMethodChange (payment_method_inactive, payment_method_active) Inactive_to_active
+
+valid_airwallex_token : access_token_support (airwallex, card)
+valid_airwallex_token = Airwallex_token
+
+valid_deutschebank_token : access_token_support (deutschebank, card)
+valid_deutschebank_token = Deutschebank_token
+
+valid_globalpay_token : access_token_support (globalpay, card)
+valid_globalpay_token = Globalpay_token
+
+valid_jpmorgan_token : access_token_support (jpmorgan, card)
+valid_jpmorgan_token = Jpmorgan_token
+
+valid_moneris_token : access_token_support (moneris, card)
+valid_moneris_token = Moneris_token
+
+valid_nordea_token : access_token_support (nordea, card)
+valid_nordea_token = Nordea_token
+
+valid_paypal_token : access_token_support (paypal, card)
+valid_paypal_token = Paypal_token
+
+valid_payu_token : access_token_support (payu, card)
+valid_payu_token = Payu_token
+
+valid_tesouro_token : access_token_support (tesouro, card)
+valid_tesouro_token = Tesouro_token
+
+valid_iatapay_token : access_token_support (iatapay, card)
+valid_iatapay_token = Iatapay_token
+
+valid_volt_token : access_token_support (volt, card)
+valid_volt_token = Volt_token
+
+valid_itaubank_token : access_token_support (itaubank, card)
+valid_itaubank_token = Itaubank_token
+
+valid_facilitapay_token : access_token_support (facilitapay, card)
+valid_facilitapay_token = Facilitapay_token
+
+valid_dwolla_token : access_token_support (dwolla, card)
+valid_dwolla_token = Dwolla_token
+
+valid_santander_token : access_token_support (santander, card)
+valid_santander_token = Santander_token
+
+valid_truelayer_token : access_token_support (truelayer, card)
+valid_truelayer_token = Truelayer_token
+
+valid_fiservcommercehub_token : access_token_support (fiservcommercehub, card)
+valid_fiservcommercehub_token = Fiservcommercehub_token
+
+valid_razorpay_order_creation_requirement : order_creation_requirement razorpay
+valid_razorpay_order_creation_requirement = Razorpay_order_creation_requirement
+
+valid_airwallex_order_creation_requirement : order_creation_requirement airwallex
+valid_airwallex_order_creation_requirement = Airwallex_order_creation_requirement
+
+valid_stripe_file_storage_support : file_storage_support stripe
+valid_stripe_file_storage_support = Stripe_file_storage_support
+
+valid_checkout_file_storage_support : file_storage_support checkout
+valid_checkout_file_storage_support = Checkout_file_storage_support
+
+valid_worldpayvantiv_file_storage_support : file_storage_support worldpayvantiv
+valid_worldpayvantiv_file_storage_support = Worldpayvantiv_file_storage_support
+
+valid_adyen_dispute_defence_requirement : dispute_defence_requirement adyen
+valid_adyen_dispute_defence_requirement = Adyen_dispute_defence_requirement
+
+valid_checkout_dispute_defence_requirement : dispute_defence_requirement checkout
+valid_checkout_dispute_defence_requirement = Checkout_dispute_defence_requirement
+
+valid_stripe_separate_authentication_support : separate_authentication_support stripe
+valid_stripe_separate_authentication_support = Stripe_separate_authentication_support
+
+valid_checkout_separate_authentication_support : separate_authentication_support checkout
+valid_checkout_separate_authentication_support = Checkout_separate_authentication_support
+
+valid_zift_separate_authentication_support : separate_authentication_support zift
+valid_zift_separate_authentication_support = Zift_separate_authentication_support
+
+valid_nmi_separate_authentication_support : separate_authentication_support nmi
+valid_nmi_separate_authentication_support = Nmi_separate_authentication_support
+
+valid_braintree_separate_authentication_support : separate_authentication_support braintree
+valid_braintree_separate_authentication_support = Braintree_separate_authentication_support
+
+valid_cybersource_separate_authentication_support : separate_authentication_support cybersource
+valid_cybersource_separate_authentication_support = Cybersource_separate_authentication_support
+
+valid_archipel_separate_authentication_support : separate_authentication_support archipel
+valid_archipel_separate_authentication_support = Archipel_separate_authentication_support
+
+valid_nuvei_separate_authentication_support : separate_authentication_support nuvei
+valid_nuvei_separate_authentication_support = Nuvei_separate_authentication_support
+
+valid_adyen_separate_authentication_support : separate_authentication_support adyen
+valid_adyen_separate_authentication_support = Adyen_separate_authentication_support
+
+valid_stripe_overcapture_support : overcapture_support stripe
+valid_stripe_overcapture_support = Stripe_overcapture_support
+
+valid_adyen_overcapture_support : overcapture_support adyen
+valid_adyen_overcapture_support = Adyen_overcapture_support
+
+valid_adyenplatform_missing_webhook_acknowledgement : missing_webhook_acknowledgement adyenplatform
+valid_adyenplatform_missing_webhook_acknowledgement = Adyenplatform_missing_webhook_acknowledgement
+
+valid_adyen_missing_webhook_acknowledgement : missing_webhook_acknowledgement adyen
+valid_adyen_missing_webhook_acknowledgement = Adyen_missing_webhook_acknowledgement
+
+valid_trustpay_redirect : access_token_support (trustpay, bank_redirect)
+valid_trustpay_redirect = Trustpay_redirect_token
+
+valid_trustpay_transfer : access_token_support (trustpay, bank_transfer)
+valid_trustpay_transfer = Trustpay_transfer_token
+
+check : (String, Bool) → IO ()
+check (name, True) = putStrLn ("PASS " ++ name)
+check (name, False) = putStrLn ("FAIL " ++ name)
+
+all_pass : Bool
+all_pass =
+  check_access_token_support &&
+  check_order_creation_requirement &&
+  check_file_storage_support &&
+  check_dispute_defence_requirement &&
+  check_separate_authentication_support &&
+  check_overcapture_support &&
+  check_missing_webhook_acknowledgement &&
+  check_transitions &&
+  check_locker
+
+main : IO ()
+main = do
+  check ("access_token_support: 2480 cases", check_access_token_support)
+  check ("order_creation_requirement: 2480 cases", check_order_creation_requirement)
+  check ("file_storage_support: 155 cases", check_file_storage_support)
+  check ("dispute_defence_requirement: 155 cases", check_dispute_defence_requirement)
+  check ("separate_authentication_support: 155 cases", check_separate_authentication_support)
+  check ("overcapture_support: 155 cases", check_overcapture_support)
+  check ("missing_webhook_acknowledgement: 155 cases", check_missing_webhook_acknowledgement)
+  check ("all state transitions: 36 cases", check_transitions)
+  check ("named locker policies: 32 cases", check_locker)
+  if all_pass then pure () else exitFailure

@@ -1,0 +1,30 @@
+{
+  "source": {
+    "status": "PASS",
+    "kind": "source-rule audit, not compiler execution",
+    "source_comparisons": 5803,
+    "indexed_capability_constructors": 39,
+    "transition_constructors": 4,
+    "negative_compile_cases": 45,
+    "baseline_commit": "1b64304318bbd50c7d9c91da75a9fc2ffcedd974",
+    "baseline_blobs": {
+      "HyperSwitch/Connector.idric": "6dc2f3ff5725ecde08c47f3b8d18eb05bb3a2a10",
+      "HyperSwitch/PaymentMethod.idric": "76fdd6ba6cbeee8b77349a7c6ae45dc4a86fa37c"
+    }
+  },
+  "compiler": {
+    "status": "PASS",
+    "commit": "d2463ec8a3a0dd4ac167029927452f3e83805dc3",
+    "version": "Idris 2, version 0.8.0-d2463ec8a",
+    "runtime_executables": 4,
+    "runtime_matrix_cases": 5803,
+    "positive_compile_controls": 45,
+    "negative_rejections": 45,
+    "rejection_diagnostic": "expected type mismatch; no import/parser/hole infrastructure failures"
+  },
+  "sources_sha256": {
+    "HyperSwitch/Attempt.idric": "6b63af89129e2520ed365ac5f4e8406b8c143c98c8960f5c78b0ee44d5699b20",
+    "HyperSwitch/Connector.idric": "9ee211fe28dbeb4f0c5af3a052631b8d69f904f73f7f3c10ed3c5f418eb42c2a",
+    "HyperSwitch/PaymentMethod.idric": "17ab83774783176fc6f489150fab018793381598bead58550f5b89973a2ba39c"
+  }
+}

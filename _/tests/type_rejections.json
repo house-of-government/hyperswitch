@@ -1,0 +1,88 @@
+[
+  {
+    "name": "token_wrong_connector",
+    "type": "AccessTokenPlan (trustpay, bank_transfer)",
+    "valid": "MkAccessTokenPlan (trustpay, bank_transfer) Trustpay_transfer_token",
+    "invalid": "MkAccessTokenPlan (stripe, card) Trustpay_transfer_token",
+    "invalid_type": "AccessTokenPlan (stripe, card)"
+  },
+  {
+    "name": "token_wrong_method",
+    "type": "AccessTokenPlan (trustpay, bank_transfer)",
+    "valid": "MkAccessTokenPlan (trustpay, bank_transfer) Trustpay_transfer_token",
+    "invalid": "MkAccessTokenPlan (trustpay, card) Trustpay_transfer_token",
+    "invalid_type": "AccessTokenPlan (trustpay, card)"
+  },
+  {
+    "name": "token_counterfeit_bool",
+    "type": "AccessTokenPlan (trustpay, bank_transfer)",
+    "valid": "MkAccessTokenPlan (trustpay, bank_transfer) Trustpay_transfer_token",
+    "invalid": "MkAccessTokenPlan (trustpay, bank_transfer) True"
+  },
+  {
+    "name": "token_result_selection_mismatch",
+    "type": "AccessTokenPlan (trustpay, bank_transfer)",
+    "valid": "MkAccessTokenPlan (trustpay, bank_transfer) Trustpay_transfer_token",
+    "invalid": "MkAccessTokenPlan (trustpay, bank_transfer) Trustpay_transfer_token",
+    "invalid_type": "AccessTokenPlan (stripe, card)"
+  },
+  {
+    "name": "unchecked_optional_certificate",
+    "type": "AccessTokenPlan (trustpay, bank_transfer)",
+    "valid": "MkAccessTokenPlan (trustpay, bank_transfer) Trustpay_transfer_token",
+    "invalid": "MkAccessTokenPlan (trustpay, bank_transfer) (access_token_support_for (trustpay, bank_transfer))"
+  },
+  {
+    "name": "wrong_capability_kind",
+    "type": "file_storage_support stripe",
+    "valid": "Stripe_file_storage_support",
+    "invalid": "Stripe_overcapture_support"
+  },
+  {
+    "name": "wrong_provider_order_creation_requirement",
+    "type": "order_creation_requirement airwallex",
+    "valid": "Airwallex_order_creation_requirement",
+    "invalid": "Airwallex_order_creation_requirement",
+    "invalid_type": "order_creation_requirement stripe"
+  },
+  {
+    "name": "wrong_provider_dispute_defence_requirement",
+    "type": "dispute_defence_requirement checkout",
+    "valid": "Checkout_dispute_defence_requirement",
+    "invalid": "Checkout_dispute_defence_requirement",
+    "invalid_type": "dispute_defence_requirement stripe"
+  },
+  {
+    "name": "wrong_provider_separate_authentication_support",
+    "type": "separate_authentication_support stripe",
+    "valid": "Stripe_separate_authentication_support",
+    "invalid": "Stripe_separate_authentication_support",
+    "invalid_type": "separate_authentication_support paypal"
+  },
+  {
+    "name": "wrong_provider_overcapture_support",
+    "type": "overcapture_support stripe",
+    "valid": "Stripe_overcapture_support",
+    "invalid": "Stripe_overcapture_support",
+    "invalid_type": "overcapture_support checkout"
+  },
+  {
+    "name": "wrong_provider_missing_webhook_acknowledgement",
+    "type": "missing_webhook_acknowledgement adyen",
+    "valid": "Adyen_missing_webhook_acknowledgement",
+    "invalid": "Adyen_missing_webhook_acknowledgement",
+    "invalid_type": "missing_webhook_acknowledgement stripe"
+  },
+  {
+    "name": "lookup_policy_is_not_bool",
+    "type": "locker_id_policy",
+    "valid": "locker_id_policy_for (wallet, lookup_saved_customer_method)",
+    "invalid": "locker_id_policy_for (wallet, True)"
+  },
+  {
+    "name": "connector_is_not_text",
+    "type": "AccessTokenPlan (paypal, wallet)",
+    "valid": "MkAccessTokenPlan (paypal, wallet) Paypal_token",
+    "invalid": "MkAccessTokenPlan (\"paypal\", wallet) Paypal_token"
+  }
+]
